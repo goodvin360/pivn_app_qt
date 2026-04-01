@@ -25,7 +25,8 @@
 #include <QTextCodec>
 #include <QTextStream>
 #include "QTimer"
-#include "serialPort.h"
+#include "QThread"
+#include "serialWorker.h"
 
 #pragma region Docs
 
@@ -47,8 +48,11 @@ public:
     QString fileName;
 
     QTimer*m_timer;
-    QSerialPort*qtPort;
-    serialPort*sPort;
+
+private:
+    QThread*serialThread;
+    SerialWorker*worker;
+    QByteArray myData;
 
 public slots:
     void addStart();
@@ -56,6 +60,9 @@ public slots:
     void startByTimer();
 //    void getCOM(QString itemName);
 //    void connectCOM();
+
+private slots:
+    void handleData(QByteArray data);
 };
 
 

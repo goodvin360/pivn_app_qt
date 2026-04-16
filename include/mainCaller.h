@@ -13,6 +13,8 @@
 #include "QFileDialog"
 #include "QApplication"
 #include "QScrollBar"
+#include "QVector"
+#include "QByteArray"
 #include "windows.h"
 #include <sstream>
 #include "fstream"
@@ -21,14 +23,14 @@
 #include "string"
 #include "map"
 #include "vector"
-#include "math.h"
+#include "cmath"
 #include <QTextCodec>
 #include <QTextStream>
 #include "QTimer"
 #include "QThread"
 #include "serialWorker.h"
-#include "fstream"
 #include "Plotter.h"
+#include "ProcessingWorker.h"
 
 #pragma region Docs
 
@@ -44,28 +46,41 @@ public:
 
     QPushButton*pushButton = new QPushButton();
     QComboBox*comboBox = new QComboBox();
+    QTextBrowser*textBrowser = nullptr;
 
 
     std::string portName;
     QTimer*m_timer;
-    Plotter*myPlotter;
+    QTimer*uiTimer;
 
 private:
+    Plotter*myPlotter;
     QThread*serialThread;
+    QThread * procThread;
     SerialWorker*worker;
+    ProcessingWorker*procWorker;
     QByteArray myData;
-    std::vector <int> number;
-    std::vector <std::string> portData;
+
+    Chart*chart;
+    ChartView*chartView;
+
+    QString logBuffer;
+    QMutex logMutex;
+
+    void setupChart();
 
 public slots:
     void addStart();
     void addStop();
     void startByTimer();
     void getCOM(QString itemName);
+    void textBrowserOut (QVector<double> values);
+    void flushTextLog();
 //    void connectCOM();
 
 private slots:
     void handleData(QByteArray data);
+
 };
 
 

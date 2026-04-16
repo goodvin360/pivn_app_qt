@@ -2,12 +2,21 @@
 #include "iostream"
 
 Plotter::Plotter() {
+
+    timer = new QTimer(this);
+
+    connect(timer, &QTimer::timeout, this, &Plotter::plotGraph);
+
+    timer->start(1);
+
+
     chart = new Chart();
     chartView = new ChartView(chart);
 
     m_axisX = new QValueAxis();
     m_axisY = new QValueAxis();
     series = new QLineSeries();
+    series->setUseOpenGL(true);
     chart->addSeries(series);
     chart->legend()->setVisible(true);
     chart->setVisible(true);
@@ -24,20 +33,59 @@ Plotter::Plotter() {
     m_axisX->applyNiceNumbers();
     m_axisY->applyNiceNumbers();
     chartView->setGeometry(500,500,500,500);
+
 }
 
 Plotter::~Plotter() {
     delete chart;
     delete chartView;
+
 }
+
+void Plotter::onParsedData(QVector<double> values) {
+    QMutexLocker locker(&mutex);
+    buffer += values;
+}
+
+/*void Plotter::flushToPlot() {
+    QVector<double> local;
+    {
+        QMutexLocker locker(&mutex);
+        local.swap(buffer);
+    }
+    if (local.isEmpty())
+        return;
+
+    static double x = 0;
+
+    for (double v :local) {
+        mySeries->append(x++, v);
+    }
+
+    if (mySeries->count()>2000) {
+        mySeries->removePoints(0, mySeries->count()-2000);
+    }
+}*/
 
 void Plotter::plotGraph() {
 
-    int min = 1, max = 100;
-    // Formula: min + (rand() % (max - min + 1))
-    int random_num = min + (std::rand() % (max - min + 1));
-    vecData.push_back(random_num);
-    std::cout << random_num << std::endl;
+    QVector<double> local;
+    {
+        QMutexLocker locker(&mutex);
+        local.swap(buffer);
+    }
+    if (local.isEmpty())
+        return;
+
+    static double x = 0;
+
+    for (double v :local) {
+        vecData.push_back(v);
+        if (vecData.size()>rescaleSize)
+        {
+            vecData.erase(vecData.begin(), vecData.end()-rescaleSize);
+        }
+    }
 
     QVector<QPointF> points(2 * vecData.size());
     for (std::vector<int>::size_type l = 0; l != vecData.size(); ++l) {
@@ -56,7 +104,6 @@ void Plotter::plotGraph() {
 
     maxValVec.clear();
     maxValVec.push_back(*max_element(vecData.begin(), vecData.end()));
-
     max_y = *max_element(maxValVec.begin(), maxValVec.end());
     m_axisX->setRange(0, vecData.size());
     m_axisY->setRange(0, 1.2 * max_y);

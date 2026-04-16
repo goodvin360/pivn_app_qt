@@ -9,17 +9,23 @@
 #include <QMainWindow>
 #include "ui_mainW.h"
 #include "mainCaller.h"
+#include "QMetaType"
 
 
 
 int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
+
+    qRegisterMetaType<QVector<double>>("QVector<double>");
+
     SetConsoleOutputCP(CP_UTF8);
     setlocale(LC_ALL, ".UTF8");
     mainWindow *window = new mainWindow(nullptr);
 
     Ui::MainWindow mainW;
     mainW.setupUi(window);
+
+    window->textBrowser = mainW.textBrowser;
 
     foreach (const QSerialPortInfo &serialPortInfo, QSerialPortInfo::availablePorts())
         {mainW.comboBox->addItem(serialPortInfo.portName());}

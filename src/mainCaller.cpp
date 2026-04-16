@@ -1,19 +1,26 @@
 #include "mainCaller.h"
+#include "Plotter.h"
 
 mainWindow::mainWindow(QWidget *parent) : QMainWindow(parent) {
 
     parent = nullptr;
-
     this->setAttribute(Qt::WA_DeleteOnClose);
 
-    m_timer = new QTimer();
+/*    m_timer = new QTimer();
     connect(m_timer, &QTimer::timeout, this, &mainWindow::startByTimer);
-    m_timer->setInterval(1000);
+    m_timer->setInterval(1000);*/
+
+    uiTimer = new QTimer(this);
+
+    connect(uiTimer, &QTimer::timeout, this, &mainWindow::flushTextLog);
+    uiTimer->start(1000);
+
+    setupChart();
 
 }
 
 mainWindow::~mainWindow() {
-
+    delete myPlotter;
 }
 
 void mainWindow::startByTimer() {
@@ -21,6 +28,7 @@ void mainWindow::startByTimer() {
 }
 
 void mainWindow::addStart() {
+
     serialThread = new QThread(this);
 
     worker = new SerialWorker(nullptr, portName);
@@ -28,22 +36,24 @@ void mainWindow::addStart() {
     worker->moveToThread(serialThread);
 
     connect(serialThread, &QThread::started, worker, &SerialWorker::startWork);
-    connect(worker, &SerialWorker::dataReceived, this, &mainWindow::handleData);
+//    connect(worker, &SerialWorker::dataReceived, this, &mainWindow::handleData);
+
     connect(worker, &SerialWorker::error, this, [](QString err){qDebug() << "Serial error:" << err;});
     connect(this, &QObject::destroyed, worker, &SerialWorker::stopWork);
     connect(serialThread, &QThread::finished, worker, &QObject::deleteLater);
 
     serialThread->start();
-    myPlotter = new Plotter();
+
+    procThread = new QThread(this);
+    procWorker = new ProcessingWorker();
+
+    procWorker->moveToThread(procThread);
+    connect(worker, &SerialWorker::dataReceived, procWorker, &ProcessingWorker::process);
+    connect(procWorker, &ProcessingWorker::processedData, myPlotter, &Plotter::onParsedData);
+    connect(procWorker, &ProcessingWorker::processedData, this, &mainWindow::textBrowserOut);
+    procThread->start();
 
 
-
-//    number.clear();
-//    portData.clear();
-
-//    std::cout << myData.toStdString() << std::endl;
-
-//    m_timer->start();
 }
 
 void mainWindow::addStop() {
@@ -51,23 +61,16 @@ void mainWindow::addStop() {
     serialThread->quit();
     serialThread->wait();
 
-    /*std::fstream fout("../results.txt", std::ios::out);
-    for (int i=0; i<number.size()-1; i++)
-        fout << number.at(i) << '\t' << portData.at(i) << '\n';
-    fout.close();
-    num = 0;*/
+//    procWorker->fileWrite();
+
+    procThread->quit();
+    procThread->wait();
+
 }
 
 void mainWindow::handleData(QByteArray data) {
 //    qDebug() << "GUI thread:" << QThread::currentThread();
     myData = data;
-//    std::cout << data.toStdString() << std::endl;
-    myPlotter->plotGraph();
-
-    /*num++;
-    number.push_back(num);
-    portData.push_back(data.toStdString());*/
-
 }
 
 
@@ -89,4 +92,33 @@ void mainWindow::getCOM(QString itemName) {
     }
 
     portName = portString.str();
+}
+
+
+void mainWindow::setupChart() {
+    myPlotter = new Plotter();
+}
+
+void mainWindow::textBrowserOut(QVector<double> values) {
+
+    QString line;
+    for (double v: values) {
+        line += QString::number(v) + " ";
+    }
+
+    QMutexLocker locker(&logMutex);
+    logBuffer += line;
+}
+
+void mainWindow::flushTextLog() {
+    QString local;
+    {
+        QMutexLocker locker(&logMutex);
+        local.swap(logBuffer);
+    }
+
+    if (local.isEmpty())
+        return;
+
+    textBrowser->append(local);
 }

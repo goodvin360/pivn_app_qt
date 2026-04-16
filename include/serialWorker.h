@@ -27,6 +27,8 @@ signals:
 private:
     QSerialPort serial;
     std::string pName;
+    QByteArray buffer;
+    void processBuffer();
 };
 
 #endif //PIVN_APP_QT_SERIAL_SERIALWORKER_H

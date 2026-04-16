@@ -40,6 +40,16 @@
      <string>Stop</string>
     </property>
    </widget>
+   <widget class="QComboBox" name="comboBox">
+    <property name="geometry">
+     <rect>
+      <x>35</x>
+      <y>25</y>
+      <width>69</width>
+      <height>22</height>
+     </rect>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -87,9 +97,27 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>comboBox</sender>
+   <signal>activated(QString)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>getCOM(QString)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>63</x>
+     <y>62</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>58</x>
+     <y>131</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>addStart()</slot>
   <slot>addStop()</slot>
+  <slot>showLineEdit()</slot>
+  <slot>getCOM(QString)</slot>
  </slots>
 </ui>

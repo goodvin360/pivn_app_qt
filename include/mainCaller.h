@@ -27,6 +27,8 @@
 #include "QTimer"
 #include "QThread"
 #include "serialWorker.h"
+#include "fstream"
+#include "Plotter.h"
 
 #pragma region Docs
 
@@ -41,24 +43,25 @@ public:
     QMainWindow*mWin = new QMainWindow();
 
     QPushButton*pushButton = new QPushButton();
+    QComboBox*comboBox = new QComboBox();
 
-    QString pName;
+
     std::string portName;
-    std::vector <std::string> portNames;
-    QString fileName;
-
     QTimer*m_timer;
+    Plotter*myPlotter;
 
 private:
     QThread*serialThread;
     SerialWorker*worker;
     QByteArray myData;
+    std::vector <int> number;
+    std::vector <std::string> portData;
 
 public slots:
     void addStart();
     void addStop();
     void startByTimer();
-//    void getCOM(QString itemName);
+    void getCOM(QString itemName);
 //    void connectCOM();
 
 private slots:

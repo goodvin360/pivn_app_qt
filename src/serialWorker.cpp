@@ -10,7 +10,7 @@ SerialWorker::SerialWorker(QObject *parent, std::string portName)
 void SerialWorker::startWork()
 {
     serial.setPortName(pName.data());
-    serial.setBaudRate(QSerialPort::Baud115200);        // ← подставь свой
+    serial.setBaudRate(921600);        // ← подставь свой
     serial.setDataBits(QSerialPort::Data7);             // ← подставь свой
     serial.setParity(QSerialPort::NoParity);            // ← подставь свой
     serial.setStopBits(QSerialPort::OneStop);           // ← подставь свой
@@ -36,6 +36,33 @@ void SerialWorker::stopWork()
 
 void SerialWorker::onReadyRead()
 {
-    QByteArray data = serial.readAll();
-    emit dataReceived(data);
+    buffer.append(serial.readAll());
+    processBuffer();
+
+//    QByteArray data = serial.readAll();
+//    emit dataReceived(data);
+}
+
+void SerialWorker::processBuffer() {
+    while (true) {
+        int start = buffer.indexOf('<');
+
+        if (start==-1) {
+            buffer.clear();
+            return;
+        }
+
+        int end = buffer.indexOf('>', start);
+
+        if (end == -1) {
+            if (start>0)
+                buffer.remove(0, start);
+            return;
+        }
+        QByteArray packet = buffer.mid(start, end - start +1);
+
+        buffer.remove(0, end+1);
+
+        emit dataReceived(packet);
+    }
 }
